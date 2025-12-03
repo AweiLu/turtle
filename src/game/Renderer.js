@@ -44,9 +44,6 @@ export class Renderer {
         }
         this.ctx.restore();
 
-        // Layer 2.5: Seaweed (Foreground Parallax)
-        this.drawSeaweed(scrollX);
-
         // Layer 3: God Rays (Overlay)
         this.ctx.save();
         this.ctx.globalCompositeOperation = 'overlay';
@@ -60,36 +57,6 @@ export class Renderer {
 
         this.ctx.fillStyle = rayGradient;
         this.ctx.fillRect(-200, 0, this.width + 400, this.height);
-        this.ctx.restore();
-
-        // Vignette
-        const vignette = this.ctx.createRadialGradient(this.width / 2, this.height / 2, this.height / 3, this.width / 2, this.height / 2, this.height);
-        vignette.addColorStop(0, 'rgba(0,0,0,0)');
-        vignette.addColorStop(1, 'rgba(0,0,20,0.6)');
-        this.ctx.fillStyle = vignette;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-    }
-
-    drawSeaweed(scrollX) {
-        this.ctx.save();
-        this.ctx.fillStyle = '#004433';
-        const time = performance.now() * 0.001;
-
-        for (let i = 0; i < 20; i++) {
-            const x = ((i * 200) - scrollX * 0.5) % (this.width + 200);
-            const drawX = x < -100 ? x + this.width + 200 : x;
-            const height = 100 + Math.sin(i) * 50;
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(drawX, this.height);
-
-            // Bezier curve for swaying seaweed
-            const sway = Math.sin(time + i) * 20;
-            this.ctx.quadraticCurveTo(drawX + sway, this.height - height / 2, drawX + sway * 2, this.height - height);
-            this.ctx.lineTo(drawX + 20 + sway * 2, this.height - height);
-            this.ctx.quadraticCurveTo(drawX + 20 + sway, this.height - height / 2, drawX + 20, this.height);
-            this.ctx.fill();
-        }
         this.ctx.restore();
     }
 

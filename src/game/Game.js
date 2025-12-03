@@ -64,7 +64,7 @@ export class Game {
 
         // Spawning
         this.spawnTimer += deltaTime;
-        if (this.spawnTimer > 600) { // Hard Mode: Faster spawns (was 1000)
+        if (this.spawnTimer > 1000) { // Every second
             this.spawnTimer = 0;
             this.spawnEntity();
         }
@@ -83,25 +83,13 @@ export class Game {
     spawnEntity() {
         const angle = Math.random() * Math.PI * 2;
         const dist = 800; // Spawn outside screen
-        // For sharks/mines, prefer spawning ahead (right side)
-        let x = this.turtle.x + Math.cos(angle) * dist;
-        let y = this.turtle.y + Math.sin(angle) * dist;
+        const x = this.turtle.x + Math.cos(angle) * dist;
+        const y = this.turtle.y + Math.sin(angle) * dist;
 
-        const rand = Math.random();
-        if (rand < 0.2) { // Less collectibles (was 0.3)
+        if (Math.random() < 0.3) {
             this.collectibles.push(new Collectible(this, x, y));
         } else {
-            // Hard Mode Weights: 50% Shark, 30% Mine, 20% Trash
-            let type = 'TRASH';
-            const randType = Math.random();
-            if (randType < 0.5) {
-                type = 'SHARK';
-                x = this.turtle.x + 900; // Always spawn ahead
-                y = this.turtle.y + (Math.random() - 0.5) * 700;
-            } else if (randType < 0.8) {
-                type = 'MINE';
-            }
-            this.obstacles.push(new Obstacle(this, x, y, type));
+            this.obstacles.push(new Obstacle(this, x, y));
         }
     }
 

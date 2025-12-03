@@ -8,12 +8,10 @@ export class ParticleSystem {
             x, y,
             type,
             vx: (Math.random() - 0.5) * (type === 'sparkle' ? 5 : 2),
-            vy: type === 'bubble' ? -Math.random() * 2 - 1 :
-                type === 'bubble_stream' ? -Math.random() * 4 - 2 : // Faster bubbles
-                    (Math.random() - 0.5) * 5,
+            vy: type === 'bubble' ? -Math.random() * 2 - 1 : (Math.random() - 0.5) * 5,
             life: 1.0,
             size: Math.random() * 5 + 2,
-            color: type === 'bubble' || type === 'bubble_stream' ? `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})` :
+            color: type === 'bubble' ? `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})` :
                 type === 'sparkle' ? `rgba(255, 255, 0, ${Math.random()})` : 'orange'
         };
         this.particles.push(particle);
