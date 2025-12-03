@@ -1,34 +1,36 @@
 export class Collectible {
-    constructor(game, x, y) {
+    constructor(game) {
         this.game = game;
-        this.x = x;
-        this.y = y;
-        this.size = 15;
-        this.collected = false;
-        this.wobble = Math.random() * Math.PI * 2;
+        this.width = 30;
+        this.height = 30;
+        this.x = this.game.width;
+        this.y = Math.random() * (this.game.height - 100);
+        this.speedX = -2;
+        this.markedForDeletion = false;
+        this.angle = 0;
     }
 
     update(deltaTime) {
-        this.wobble += 0.05;
+        this.x += this.speedX;
+        this.angle += 0.1;
+        if (this.x + this.width < 0) this.markedForDeletion = true;
     }
 
-    draw(ctx) {
-        if (this.collected) return;
-        ctx.save();
-        ctx.translate(this.x, this.y + Math.sin(this.wobble) * 5);
-
-        ctx.fillStyle = '#ffff00';
-        ctx.beginPath();
-        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Glow
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#ffff00';
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.restore();
+    draw(context) {
+        context.save();
+        context.translate(this.x + this.width / 2, this.y + this.height / 2);
+        context.rotate(this.angle);
+        context.fillStyle = 'gold';
+        context.beginPath();
+        // Draw Star
+        for (let i = 0; i < 5; i++) {
+            context.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * 15,
+                -Math.sin((18 + i * 72) * Math.PI / 180) * 15);
+            context.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * 7,
+                -Math.sin((54 + i * 72) * Math.PI / 180) * 7);
+        }
+        context.closePath();
+        context.fill();
+        context.restore();
     }
 }

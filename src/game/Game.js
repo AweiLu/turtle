@@ -1,137 +1,169 @@
-import { Renderer } from './Renderer.js';
-import { InputHandler } from './InputHandler.js';
 import { Turtle } from './entities/Turtle.js';
-import { ParticleSystem } from './systems/ParticleSystem.js';
+import { InputHandler } from './InputHandler.js';
+import { Background } from './systems/Background.js';
 import { Obstacle } from './entities/Obstacle.js';
+import { ParticleSystem } from './systems/ParticleSystem.js';
 import { Collectible } from './entities/Collectible.js';
 
-export class Game {
-    constructor() {
-        this.renderer = new Renderer('gameCanvas');
+class Game {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        this.context = this.canvas.getContext('2d');
+
         this.input = new InputHandler();
+        this.background = new Background(this);
         this.turtle = new Turtle(this);
-        this.particles = new ParticleSystem();
+        this.particles = new ParticleSystem(this);
+
         this.obstacles = [];
+        this.obstacleTimer = 0;
+        this.obstacleInterval = 1500;
+
         this.collectibles = [];
+        this.collectibleTimer = 0;
+        this.collectibleInterval = 2000;
+
+        this.score = 0;
+        this.gameOver = false;
+        this.gameStarted = false;
+
+        this.resize(window.innerWidth, window.innerHeight);
+        window.addEventListener('resize', e => {
+            this.resize(e.target.innerWidth, e.target.innerHeight);
+        });
+
+        // UI Elements
+        this.scoreElement = document.getElementById('score');
+        this.startScreen = document.getElementById('start-screen');
+        this.gameOverScreen = document.getElementById('game-over-screen');
+        this.finalScoreElement = document.getElementById('final-score');
+
+        // Start loop
         this.lastTime = 0;
-        this.isRunning = false;
-        this.score = 0;
-        this.spawnTimer = 0;
-
-        // Camera
-        this.camera = { x: 0, y: 0 };
+        this.animate(0);
     }
 
-    start() {
-        if (this.isRunning) return;
-        this.reset();
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        requestAnimationFrame((ts) => this.loop(ts));
-
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('score').innerText = 'Score: 0';
+    resize(width, height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.width = width;
+        this.height = height;
     }
 
-    reset() {
-        this.turtle = new Turtle(this);
-        this.obstacles = [];
-        this.collectibles = [];
-        this.particles = new ParticleSystem();
-        this.score = 0;
-        this.spawnTimer = 0;
-        this.camera = { x: 0, y: 0 };
+    update(deltaTime) {
+        if (!this.gameStarted) {
+            if (this.input.isDown(' ')) {
+                this.startGame();
+            }
+            return;
+        }
+
+        if (this.gameOver) {
+            if (this.input.isDown(' ')) {
+                this.restartGame();
+            }
+            return;
+        }
+
+        this.background.update(deltaTime);
+        this.turtle.update(deltaTime);
+        this.particles.update(deltaTime);
+
+        // Obstacles
+        if (this.obstacleTimer > this.obstacleInterval) {
+            this.obstacles.push(new Obstacle(this));
+            this.obstacleTimer = 0;
+        } else {
+            this.obstacleTimer += deltaTime;
+        }
+
+        this.obstacles.forEach(obstacle => {
+            obstacle.update(deltaTime);
+            if (this.checkCollision(this.turtle, obstacle)) {
+                this.endGame();
+            }
+        });
+        this.obstacles = this.obstacles.filter(obstacle => !obstacle.markedForDeletion);
+
+        // Collectibles
+        if (this.collectibleTimer > this.collectibleInterval) {
+            this.collectibles.push(new Collectible(this));
+            this.collectibleTimer = 0;
+        } else {
+            this.collectibleTimer += deltaTime;
+        }
+
+        this.collectibles.forEach(collectible => {
+            collectible.update(deltaTime);
+            if (this.checkCollision(this.turtle, collectible)) {
+                collectible.markedForDeletion = true;
+                this.score += 10; // Bonus points
+                // Add sparkle effect?
+                for (let i = 0; i < 5; i++) this.particles.addParticle(collectible.x, collectible.y);
+            }
+        });
+        this.collectibles = this.collectibles.filter(collectible => !collectible.markedForDeletion);
+
+        // Score
+        this.score += deltaTime * 0.01;
+        this.scoreElement.innerText = 'Score: ' + Math.floor(this.score);
     }
 
-    loop(timestamp) {
-        if (!this.isRunning) return;
-        const deltaTime = timestamp - this.lastTime;
-        this.lastTime = timestamp;
+    draw() {
+        this.context.clearRect(0, 0, this.width, this.height);
+
+        this.background.draw(this.context);
+        this.particles.draw(this.context);
+        this.turtle.draw(this.context);
+
+        this.obstacles.forEach(obstacle => obstacle.draw(this.context));
+        this.collectibles.forEach(collectible => collectible.draw(this.context));
+    }
+
+    animate(timeStamp) {
+        const deltaTime = timeStamp - this.lastTime;
+        this.lastTime = timeStamp;
 
         this.update(deltaTime);
         this.draw();
 
-        requestAnimationFrame((ts) => this.loop(ts));
+        requestAnimationFrame(this.animate.bind(this));
     }
 
-    update(deltaTime) {
-        this.turtle.update(this.input);
-        this.particles.update(deltaTime);
-
-        // Camera follows turtle
-        this.camera.x = this.turtle.x;
-        this.camera.y = this.turtle.y;
-
-        // Spawning
-        this.spawnTimer += deltaTime;
-        if (this.spawnTimer > 1000) { // Every second
-            this.spawnTimer = 0;
-            this.spawnEntity();
-        }
-
-        // Update Entities
-        this.obstacles.forEach(o => o.update(deltaTime));
-        this.collectibles.forEach(c => c.update(deltaTime));
-
-        // Cleanup off-screen (simple distance check from turtle)
-        this.obstacles = this.obstacles.filter(o => this.getDist(o, this.turtle) < 2000);
-        this.collectibles = this.collectibles.filter(c => this.getDist(c, this.turtle) < 2000);
-
-        this.checkCollisions();
+    startGame() {
+        this.gameStarted = true;
+        this.gameOver = false;
+        this.score = 0;
+        this.obstacles = [];
+        this.collectibles = [];
+        this.startScreen.classList.add('hidden');
+        this.gameOverScreen.classList.add('hidden');
     }
 
-    spawnEntity() {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 800; // Spawn outside screen
-        const x = this.turtle.x + Math.cos(angle) * dist;
-        const y = this.turtle.y + Math.sin(angle) * dist;
-
-        if (Math.random() < 0.3) {
-            this.collectibles.push(new Collectible(this, x, y));
-        } else {
-            this.obstacles.push(new Obstacle(this, x, y));
-        }
+    endGame() {
+        this.gameOver = true;
+        this.gameOverScreen.classList.remove('hidden');
+        this.finalScoreElement.innerText = Math.floor(this.score);
     }
 
-    getDist(e1, e2) {
-        const dx = e1.x - e2.x;
-        const dy = e1.y - e2.y;
-        return Math.sqrt(dx * dx + dy * dy);
+    restartGame() {
+        this.startGame();
+        this.turtle.reset();
     }
 
-    checkCollisions() {
-        // Collectibles
-        for (let i = this.collectibles.length - 1; i >= 0; i--) {
-            const c = this.collectibles[i];
-            if (this.getDist(c, this.turtle) < c.size + this.turtle.width / 2) {
-                this.score += 10;
-                document.getElementById('score').innerText = `Score: ${this.score}`;
-                this.particles.emit(c.x, c.y, 'sparkle');
-                this.collectibles.splice(i, 1);
-            }
-        }
-
-        // Obstacles
-        for (const o of this.obstacles) {
-            if (this.getDist(o, this.turtle) < o.size + this.turtle.width / 3) {
-                this.gameOver();
-            }
-        }
-    }
-
-    gameOver() {
-        this.isRunning = false;
-        const startScreen = document.getElementById('start-screen');
-        startScreen.style.display = 'block';
-        startScreen.innerHTML = `<h1>Game Over</h1><p>Score: ${this.score}</p><p>Press Enter to Restart</p>`;
-    }
-
-    draw() {
-        this.renderer.draw((ctx) => {
-            this.particles.draw(ctx);
-            this.obstacles.forEach(o => o.draw(ctx));
-            this.collectibles.forEach(c => c.draw(ctx));
-            this.turtle.draw(ctx);
-        }, this.camera.x, this.camera.y);
+    checkCollision(rect1, rect2) {
+        return (
+            rect1.x < rect2.x + rect2.width &&
+            rect1.x + rect1.width > rect2.x &&
+            rect1.y < rect2.y + rect2.height &&
+            rect1.y + rect1.height > rect2.y
+        );
     }
 }
+
+window.addEventListener('load', () => {
+    const canvas = document.getElementById('gameCanvas');
+    new Game(canvas);
+});
