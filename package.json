@@ -4,8 +4,10 @@
   "description": "A fun turtle mini game with cool effects",
   "main": "index.html",
   "scripts": {
-    "start": "npx serve .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite"
   },
   "keywords": [
     "game",
@@ -15,6 +17,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "serve": "^14.2.1"
+    "vite": "^5.0.0"
   }
 }
