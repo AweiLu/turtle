@@ -4,8 +4,8 @@ export class Obstacle {
         this.x = x;
         this.y = y;
         this.type = type;
-        this.size = type === 'SHARK' ? 50 : 30;
-        this.speed = type === 'SHARK' ? 4 : (Math.random() * 2 + 1);
+        this.size = type === 'SHARK' ? 60 : 30; // Bigger shark
+        this.speed = type === 'SHARK' ? 7 : (Math.random() * 2 + 1); // Faster shark
         this.angle = type === 'SHARK' ? Math.PI : (Math.random() * Math.PI * 2); // Sharks swim left
 
         // Mine wobble
@@ -19,10 +19,10 @@ export class Obstacle {
             this.y += Math.sin(this.wobble) * 0.5;
         } else if (this.type === 'SHARK') {
             this.x -= this.speed;
-            // Simple homing if close
+            // Aggressive homing
             const dy = this.game.turtle.y - this.y;
-            if (Math.abs(dy) < 200) {
-                this.y += Math.sign(dy) * 0.5;
+            if (Math.abs(dy) < 300) {
+                this.y += Math.sign(dy) * 1.5; // Faster tracking
             }
         } else {
             // Trash
@@ -57,27 +57,34 @@ export class Obstacle {
 
         } else if (this.type === 'SHARK') {
             ctx.scale(-1, 1); // Face left
-            ctx.fillStyle = '#667788';
+            ctx.fillStyle = '#2a2a2a'; // Dark menacing gray
             // Body
             ctx.beginPath();
-            ctx.ellipse(0, 0, 50, 20, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 60, 25, 0, 0, Math.PI * 2);
             ctx.fill();
             // Tail
             ctx.beginPath();
-            ctx.moveTo(40, 0);
-            ctx.lineTo(70, -20);
-            ctx.lineTo(70, 20);
+            ctx.moveTo(50, 0);
+            ctx.lineTo(80, -25);
+            ctx.lineTo(80, 25);
             ctx.fill();
-            // Fin
+            // Dorsal Fin (Sharper)
             ctx.beginPath();
-            ctx.moveTo(0, -10);
-            ctx.lineTo(10, -35);
-            ctx.lineTo(20, -10);
+            ctx.moveTo(0, -15);
+            ctx.lineTo(15, -45);
+            ctx.lineTo(30, -15);
             ctx.fill();
-            // Eye
+            // Eye (Angry Red)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(-35, -8, 4, 0, Math.PI * 2);
+            ctx.fill();
+            // Teeth
             ctx.fillStyle = '#fff';
             ctx.beginPath();
-            ctx.arc(-30, -5, 3, 0, Math.PI * 2);
+            ctx.moveTo(-50, 5);
+            ctx.lineTo(-40, 15);
+            ctx.lineTo(-30, 5);
             ctx.fill();
 
         } else {
